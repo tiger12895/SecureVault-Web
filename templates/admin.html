@@ -1,0 +1,135 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<div class="flex-between mb-4">
+    <div>
+        <div style="font-size:1.2rem; font-weight:700; color:var(--sv-warn);">⚙️ لوحة الإدارة</div>
+        <div class="text-muted text-sm">Role-Based Access Control (RBAC) — إدارة المستخدمين والصلاحيات</div>
+    </div>
+    <div style="background:rgba(255,184,48,0.08); border:1px solid rgba(255,184,48,0.25); border-radius:8px; padding:0.4rem 0.9rem; font-size:0.78rem; color:var(--sv-warn); font-family:'IBM Plex Mono',monospace;">
+        ADMIN ACCESS ONLY
+    </div>
+</div>
+
+<!-- Stats -->
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:1.5rem;">
+    <div class="stat-card stat-warn">
+        <div class="stat-lbl">إجمالي المستخدمين</div>
+        <div class="stat-val">{{ users | length }}</div>
+        <div class="stat-sub">مستخدم مسجل</div>
+    </div>
+    <div class="stat-card stat-blue">
+        <div class="stat-lbl">الأدوار المتاحة</div>
+        <div class="stat-val">3</div>
+        <div class="stat-sub">Admin / Manager / User</div>
+    </div>
+    <div class="stat-card stat-teal">
+        <div class="stat-lbl">نظام التحكم</div>
+        <div class="stat-val">RBAC</div>
+        <div class="stat-sub">Role-Based Access</div>
+    </div>
+</div>
+
+<!-- Users Table -->
+<div class="sv-card mb-3">
+    <div class="sv-card-header">👥 إدارة المستخدمين والصلاحيات</div>
+    <table class="sv-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>المستخدم</th>
+                <th>البريد الإلكتروني</th>
+                <th>الدور الحالي</th>
+                <th>2FA</th>
+                <th>نوع الحساب</th>
+                <th style="text-align:center;">تغيير الدور</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td class="text-muted text-sm" style="font-family:'IBM Plex Mono',monospace;">#{{ user.user_id }}</td>
+                <td>
+                    <span style="font-weight:700;">{{ user.username }}</span>
+                </td>
+                <td class="text-muted text-sm">{{ user.email }}</td>
+                <td>
+                    {% if user.role_id == 1 %}
+                    <span style="background:rgba(255,79,109,0.12); color:var(--sv-danger); border:1px solid rgba(255,79,109,0.3); font-size:0.68rem; font-family:'IBM Plex Mono',monospace; padding:2px 9px; border-radius:20px;">ADMIN</span>
+                    {% elif user.role_id == 2 %}
+                    <span style="background:rgba(255,184,48,0.12); color:var(--sv-warn); border:1px solid rgba(255,184,48,0.3); font-size:0.68rem; font-family:'IBM Plex Mono',monospace; padding:2px 9px; border-radius:20px;">MANAGER</span>
+                    {% else %}
+                    <span style="background:rgba(99,116,255,0.12); color:var(--sv-accent); border:1px solid rgba(99,116,255,0.3); font-size:0.68rem; font-family:'IBM Plex Mono',monospace; padding:2px 9px; border-radius:20px;">USER</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if user.two_factor_secret %}
+                    <span style="color:var(--sv-green); font-size:0.78rem;">✅ مفعّل</span>
+                    {% else %}
+                    <span class="text-muted text-sm">— غير مفعّل</span>
+                    {% endif %}
+                </td>
+                <td class="text-muted text-sm">
+                    {% if user.password_hash == 'OAUTH_ACCOUNT' %}
+                    <span style="color:var(--sv-accent2);">🔗 Google OAuth</span>
+                    {% else %}
+                    <span>🔑 Password</span>
+                    {% endif %}
+                </td>
+                <td style="text-align:center;">
+                    {% if user.role_id != 1 %}
+                    <form action="/admin/change-role" method="POST" style="display:inline-flex; gap:6px; align-items:center; justify-content:center;">
+                        <input type="hidden" name="user_id" value="{{ user.user_id }}">
+                        <select name="role_id" class="sv-inp" style="width:auto; padding:0.3rem 0.5rem; font-size:0.78rem;">
+                            <option value="2" {% if user.role_id == 2 %}selected{% endif %}>Manager</option>
+                            <option value="3" {% if user.role_id == 3 %}selected{% endif %}>User</option>
+                        </select>
+                        <button type="submit" class="sv-btn sv-btn-warn sv-btn-sm" style="border-color:rgba(255,184,48,0.4); color:var(--sv-warn);">حفظ</button>
+                    </form>
+                    {% else %}
+                    <span class="text-muted text-sm">—</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- RBAC Explanation -->
+<div class="sv-card">
+    <div class="sv-card-header">🔐 صلاحيات كل دور (RBAC Matrix)</div>
+    <div style="padding:1.2rem; overflow-x:auto;">
+        <table style="width:100%; border-collapse:collapse; font-size:0.83rem;">
+            <thead>
+                <tr>
+                    <th style="text-align:right; padding:0.6rem 0.8rem; color:var(--sv-muted); border-bottom:1px solid var(--sv-border);">الصلاحية</th>
+                    <th style="text-align:center; padding:0.6rem; color:var(--sv-danger); border-bottom:1px solid var(--sv-border);">Admin</th>
+                    <th style="text-align:center; padding:0.6rem; color:var(--sv-warn); border-bottom:1px solid var(--sv-border);">Manager</th>
+                    <th style="text-align:center; padding:0.6rem; color:var(--sv-accent); border-bottom:1px solid var(--sv-border);">User</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% set perms = [
+                    ('رفع ملفات', True, True, True),
+                    ('تحميل ملفاته', True, True, True),
+                    ('حذف ملفاته', True, True, True),
+                    ('فحص النزاهة', True, True, True),
+                    ('عرض كل الملفات', True, True, False),
+                    ('إدارة المستخدمين', True, False, False),
+                    ('تغيير الأدوار', True, False, False),
+                    ('تحميل ملفات الآخرين', True, True, False),
+                ] %}
+                {% for perm, admin, mgr, user in perms %}
+                <tr style="border-bottom:1px solid rgba(99,116,255,0.07);">
+                    <td style="padding:0.55rem 0.8rem; color:var(--sv-text);">{{ perm }}</td>
+                    <td style="text-align:center; padding:0.55rem;">{% if admin %}<span style="color:var(--sv-green);">✅</span>{% else %}<span style="color:var(--sv-muted);">—</span>{% endif %}</td>
+                    <td style="text-align:center; padding:0.55rem;">{% if mgr %}<span style="color:var(--sv-green);">✅</span>{% else %}<span style="color:var(--sv-muted);">—</span>{% endif %}</td>
+                    <td style="text-align:center; padding:0.55rem;">{% if user %}<span style="color:var(--sv-green);">✅</span>{% else %}<span style="color:var(--sv-muted);">—</span>{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

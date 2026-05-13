@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureVault — الخزنة الآمنة</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --sv-bg:      #0d0f14;
+            --sv-surface: #141720;
+            --sv-card:    #1a1e2b;
+            --sv-border:  rgba(99,116,255,0.18);
+            --sv-accent:  #6374ff;
+            --sv-accent2: #00e5c0;
+            --sv-danger:  #ff4f6d;
+            --sv-warn:    #ffb830;
+            --sv-text:    #e2e6ff;
+            --sv-muted:   #7b82a8;
+            --sv-green:   #22d98a;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: var(--sv-bg);
+            color: var(--sv-text);
+            font-family: 'Cairo', sans-serif;
+            min-height: 100vh;
+            direction: rtl;
+        }
+        a { text-decoration: none; }
+
+        /* ── NAVBAR ── */
+        .sv-nav {
+            background: var(--sv-surface);
+            border-bottom: 1px solid var(--sv-border);
+            padding: 0 0;
+            position: sticky; top: 0; z-index: 100;
+        }
+        .sv-nav-inner {
+            max-width: 1050px; margin: 0 auto;
+            display: flex; align-items: center; gap: 12px;
+            padding: 0.6rem 1.5rem;
+        }
+        .sv-brand {
+            font-family: 'IBM Plex Mono', monospace;
+            font-weight: 600; font-size: 1rem;
+            color: var(--sv-accent);
+            display: flex; align-items: center; gap: 8px;
+            letter-spacing: 1.5px; flex-shrink: 0;
+        }
+        .sv-brand-icon {
+            width: 30px; height: 30px;
+            background: linear-gradient(135deg, var(--sv-accent), var(--sv-accent2));
+            border-radius: 7px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 15px;
+        }
+        .sv-nav-links {
+            display: flex; align-items: center; gap: 4px; flex: 1;
+        }
+        .sv-nl {
+            color: var(--sv-muted);
+            font-size: 0.83rem; font-weight: 600;
+            padding: 0.38rem 0.8rem;
+            border-radius: 6px;
+            border: 1px solid transparent;
+            transition: all 0.18s;
+            display: inline-flex; align-items: center; gap: 5px;
+        }
+        .sv-nl:hover { color: var(--sv-text); background: rgba(99,116,255,0.1); border-color: var(--sv-border); }
+        .sv-nl.warn { color: var(--sv-warn); }
+        .sv-nav-right { display: flex; align-items: center; gap: 10px; }
+        .sv-username { font-size: 0.85rem; font-weight: 700; }
+        .sv-rolebadge {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.6rem; padding: 2px 7px;
+            border-radius: 20px;
+            border: 1px solid var(--sv-accent); color: var(--sv-accent);
+            letter-spacing: 1px;
+        }
+        .sv-btn-logout {
+            background: transparent; border: 1px solid var(--sv-danger);
+            color: var(--sv-danger); font-size: 0.78rem; padding: 0.3rem 0.8rem;
+            border-radius: 6px; cursor: pointer; transition: all 0.18s;
+            font-family: 'Cairo', sans-serif; font-weight: 700;
+        }
+        .sv-btn-logout:hover { background: var(--sv-danger); color: #fff; }
+
+        /* ── MAIN ── */
+        .sv-main { max-width: 1050px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+        /* ── ALERT ── */
+        .sv-alert {
+            background: rgba(99,116,255,0.08);
+            border: 1px solid rgba(99,116,255,0.28);
+            border-radius: 9px; color: var(--sv-text);
+            padding: 0.75rem 1.1rem; font-size: 0.88rem;
+            display: flex; align-items: center; gap: 10px;
+            margin-bottom: 1.2rem;
+        }
+
+        /* ── CARDS ── */
+        .sv-card {
+            background: var(--sv-card);
+            border: 1px solid var(--sv-border);
+            border-radius: 13px; overflow: hidden;
+        }
+        .sv-card-header {
+            background: rgba(99,116,255,0.06);
+            border-bottom: 1px solid var(--sv-border);
+            padding: 0.85rem 1.2rem;
+            font-weight: 700; font-size: 0.88rem;
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        /* ── STAT CARDS ── */
+        .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 1.5rem; }
+        .stat-card {
+            background: var(--sv-card);
+            border: 1px solid var(--sv-border);
+            border-radius: 12px; padding: 1rem 1.1rem;
+            position: relative; overflow: hidden;
+        }
+        .stat-card::after {
+            content: ''; position: absolute;
+            bottom: 0; left: 0; right: 0; height: 2px;
+        }
+        .stat-blue::after  { background: var(--sv-accent); }
+        .stat-green::after { background: var(--sv-green); }
+        .stat-teal::after  { background: var(--sv-accent2); }
+        .stat-warn::after  { background: var(--sv-warn); }
+        .stat-lbl { font-size: 0.72rem; color: var(--sv-muted); font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; }
+        .stat-val { font-family: 'IBM Plex Mono', monospace; font-size: 1.4rem; font-weight: 600; margin-top: 5px; }
+        .stat-blue  .stat-val { color: var(--sv-accent); }
+        .stat-green .stat-val { color: var(--sv-green); }
+        .stat-teal  .stat-val { color: var(--sv-accent2); }
+        .stat-warn  .stat-val { color: var(--sv-warn); }
+        .stat-sub { font-size: 0.72rem; color: var(--sv-muted); margin-top: 2px; }
+
+        /* ── TABLE ── */
+        .sv-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+        .sv-table thead th {
+            background: rgba(99,116,255,0.05);
+            color: var(--sv-muted); font-size: 0.7rem; font-weight: 700;
+            letter-spacing: 0.9px; text-transform: uppercase;
+            padding: 0.7rem 1rem; border-bottom: 1px solid var(--sv-border);
+        }
+        .sv-table tbody tr { border-bottom: 1px solid rgba(99,116,255,0.07); transition: background 0.14s; }
+        .sv-table tbody tr:hover { background: rgba(99,116,255,0.04); }
+        .sv-table tbody td { padding: 0.8rem 1rem; vertical-align: middle; }
+        .file-name { font-weight: 600; font-size: 0.88rem; }
+        .file-icon { color: var(--sv-accent); margin-left: 6px; }
+
+        /* ── BADGES ── */
+        .badge-enc {
+            background: rgba(34,217,138,0.1);
+            color: var(--sv-green); border: 1px solid rgba(34,217,138,0.25);
+            font-size: 0.68rem; font-family: 'IBM Plex Mono', monospace;
+            padding: 2px 9px; border-radius: 20px; letter-spacing: 0.5px;
+        }
+
+        /* ── BUTTONS ── */
+        .sv-btn {
+            font-family: 'Cairo', sans-serif; font-weight: 700;
+            border-radius: 7px; font-size: 0.83rem;
+            padding: 0.42rem 1rem; transition: all 0.18s;
+            cursor: pointer; border: 1px solid transparent;
+            display: inline-flex; align-items: center; gap: 5px;
+        }
+        .sv-btn-primary { background: var(--sv-accent); color: #fff; border-color: var(--sv-accent); }
+        .sv-btn-primary:hover { opacity: 0.85; color: #fff; }
+        .sv-btn-outline { background: transparent; border-color: var(--sv-border); color: var(--sv-muted); }
+        .sv-btn-outline:hover { border-color: var(--sv-accent); color: var(--sv-accent); }
+        .sv-btn-success { background: transparent; border-color: rgba(34,217,138,0.35); color: var(--sv-green); }
+        .sv-btn-success:hover { background: rgba(34,217,138,0.08); }
+        .sv-btn-info { background: transparent; border-color: rgba(0,229,192,0.35); color: var(--sv-accent2); }
+        .sv-btn-info:hover { background: rgba(0,229,192,0.08); }
+        .sv-btn-danger { background: transparent; border-color: rgba(255,79,109,0.35); color: var(--sv-danger); }
+        .sv-btn-danger:hover { background: rgba(255,79,109,0.08); }
+        .sv-btn-sm { padding: 0.28rem 0.7rem; font-size: 0.76rem; }
+        .sv-btn-lg { padding: 0.65rem 1.4rem; font-size: 0.95rem; }
+        .sv-btn-full { width: 100%; justify-content: center; }
+
+        /* ── FORMS ── */
+        .sv-fg { margin-bottom: 1.3rem; }
+        .sv-lbl { display: block; font-size: 0.8rem; color: var(--sv-muted); font-weight: 700; margin-bottom: 5px; letter-spacing: 0.3px; }
+        .sv-inp {
+            width: 100%; background: var(--sv-surface);
+            border: 1px solid var(--sv-border); color: var(--sv-text);
+            padding: 0.6rem 0.9rem; border-radius: 8px;
+            font-family: 'Cairo', sans-serif; font-size: 0.9rem;
+            transition: border 0.18s; outline: none;
+        }
+        .sv-inp:focus { border-color: var(--sv-accent); box-shadow: 0 0 0 3px rgba(99,116,255,0.14); }
+        .sv-inp::placeholder { color: var(--sv-muted); opacity: 0.65; }
+        .sv-inp-group { display: flex; gap: 0; }
+        .sv-inp-group .sv-inp { border-radius: 8px 0 0 8px; }
+        .sv-inp-group-btn {
+            background: var(--sv-surface); border: 1px solid var(--sv-border); border-right: none;
+            color: var(--sv-muted); padding: 0 0.9rem;
+            border-radius: 0 8px 8px 0; cursor: pointer; transition: color 0.18s;
+            font-size: 1rem;
+        }
+        .sv-inp-group-btn:hover { color: var(--sv-text); }
+        .form-hint { font-size: 0.75rem; color: var(--sv-muted); margin-top: 5px; }
+
+        /* ── AUTH CARD ── */
+        .auth-wrap { min-height: 85vh; display: flex; align-items: center; justify-content: center; }
+        .auth-card {
+            background: var(--sv-card); border: 1px solid var(--sv-border);
+            border-radius: 16px; width: 100%; max-width: 440px;
+            padding: 2.2rem 2rem;
+        }
+        .auth-logo { text-align: center; margin-bottom: 1.8rem; }
+        .auth-logo-icon {
+            width: 56px; height: 56px;
+            background: linear-gradient(135deg, var(--sv-accent), var(--sv-accent2));
+            border-radius: 14px; margin: 0 auto 0.8rem;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 26px;
+        }
+        .auth-title { font-size: 1.25rem; font-weight: 700; }
+        .auth-sub { font-size: 0.83rem; color: var(--sv-muted); margin-top: 4px; }
+        .auth-divider {
+            display: flex; align-items: center; gap: 12px;
+            margin: 1.2rem 0; color: var(--sv-muted); font-size: 0.8rem;
+        }
+        .auth-divider::before, .auth-divider::after {
+            content: ''; flex: 1; height: 1px; background: var(--sv-border);
+        }
+        .auth-link { color: var(--sv-accent); font-size: 0.85rem; }
+        .btn-google {
+            width: 100%; background: transparent;
+            border: 1px solid var(--sv-border); color: var(--sv-text);
+            padding: 0.6rem; border-radius: 8px; cursor: pointer;
+            font-family: 'Cairo', sans-serif; font-size: 0.88rem; font-weight: 700;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            transition: all 0.18s;
+        }
+        .btn-google:hover { border-color: var(--sv-accent); background: rgba(99,116,255,0.07); color: var(--sv-text); }
+
+        /* ── MONO ── */
+        .mono { font-family: 'IBM Plex Mono', monospace; font-size: 0.76rem; color: var(--sv-accent2); word-break: break-all; }
+
+        /* ── DELETE MODAL ── */
+        .sv-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.72); z-index: 999;
+            align-items: center; justify-content: center;
+        }
+        .sv-overlay.show { display: flex; }
+        .sv-modal {
+            background: var(--sv-card); border: 1px solid var(--sv-border);
+            border-radius: 14px; width: 90%; max-width: 420px;
+            padding: 1.8rem;
+        }
+        .sv-modal-title {
+            font-size: 1rem; font-weight: 700; color: var(--sv-danger);
+            margin-bottom: 0.8rem; display: flex; align-items: center; gap: 8px;
+        }
+
+        /* ── FOOTER ── */
+        .sv-footer {
+            border-top: 1px solid var(--sv-border);
+            text-align: center; padding: 1.1rem;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.72rem; color: var(--sv-muted);
+        }
+
+        /* ── GRID UTILS ── */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+        .flex { display: flex; }
+        .flex-center { display: flex; align-items: center; }
+        .flex-between { display: flex; align-items: center; justify-content: space-between; }
+        .gap-2 { gap: 8px; }
+        .gap-3 { gap: 12px; }
+        .mb-1 { margin-bottom: 0.4rem; }
+        .mb-2 { margin-bottom: 0.8rem; }
+        .mb-3 { margin-bottom: 1.2rem; }
+        .mb-4 { margin-bottom: 1.6rem; }
+        .mt-2 { margin-top: 0.8rem; }
+        .mt-3 { margin-top: 1.2rem; }
+        .mt-4 { margin-top: 1.6rem; }
+        .text-muted { color: var(--sv-muted) !important; }
+        .text-center { text-align: center; }
+        .text-sm { font-size: 0.82rem; }
+        .fw-bold { font-weight: 700; }
+
+        @media (max-width: 768px) {
+            .stat-grid { grid-template-columns: 1fr 1fr; }
+            .sv-nav-links { display: none; }
+        }
+        @media (max-width: 480px) {
+            .stat-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="sv-nav">
+    <div class="sv-nav-inner">
+        <a href="{{ url_for('dashboard') }}" class="sv-brand">
+            <div class="sv-brand-icon">🔒</div>
+            SECUREVAULT
+        </a>
+
+        {% if session['user_id'] %}
+        <div class="sv-nav-links">
+            <a class="sv-nl" href="{{ url_for('dashboard') }}">📊 لوحة التحكم</a>
+            <a class="sv-nl" href="{{ url_for('upload') }}">⬆ رفع ملف</a>
+            <a class="sv-nl" href="{{ url_for('verify') }}">🔍 فحص</a>
+            <a class="sv-nl" href="{{ url_for('setup_2fa') }}">🛡️ 2FA</a>
+            {% if session['role_id'] == 1 %}
+            <a class="sv-nl warn" href="{{ url_for('admin_panel') }}">⚙️ الإدارة</a>
+            {% endif %}
+        </div>
+
+        <div class="sv-nav-right">
+            <div style="text-align:left; display:none;" class="d-md-block" id="userInfo" style="display:flex !important; flex-direction:column; align-items:flex-end;">
+                <div>
+                    <span class="sv-username">{{ session['user_name'] }}</span>
+                    <span class="sv-rolebadge" style="margin-right:6px;">
+                        {% if session['role_id'] == 1 %}ADMIN
+                        {% elif session['role_id'] == 2 %}MGR
+                        {% else %}USER{% endif %}
+                    </span>
+                </div>
+            </div>
+            <a href="{{ url_for('logout') }}" class="sv-btn-logout">خروج</a>
+        </div>
+        {% else %}
+        <div style="margin-right:auto;"></div>
+        <div class="flex gap-2">
+            <a href="{{ url_for('login') }}" class="sv-btn sv-btn-outline">دخول</a>
+            <a href="{{ url_for('register') }}" class="sv-btn sv-btn-primary">تسجيل</a>
+        </div>
+        {% endif %}
+    </div>
+</nav>
+
+<div class="sv-main">
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}{% for message in messages %}
+        <div class="sv-alert">ℹ️ {{ message }}</div>
+      {% endfor %}{% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+</div>
+
+<footer class="sv-footer">
+    [ SECUREVAULT v2.0 ] &nbsp;·&nbsp; AES-256 + SHA-256 + JWT + 2FA &nbsp;·&nbsp; © 2026 مشروع التخرج
+</footer>
+
+<!-- Global Delete Modal -->
+<div class="sv-overlay" id="deleteModal">
+    <div class="sv-modal">
+        <div class="sv-modal-title">⚠️ تأكيد الحذف النهائي</div>
+        <p class="text-sm text-muted mb-2">سيتم حذف الملف:</p>
+        <p id="deleteModalFileName" class="mono mb-3" style="color:var(--sv-danger);"></p>
+        <p class="text-sm text-muted mb-4">هذا الإجراء لا رجعة فيه — الملف المشفر سيُحذف نهائياً.</p>
+        <div class="flex gap-2" style="justify-content:flex-end;">
+            <button class="sv-btn sv-btn-outline" onclick="closeDelete()">إلغاء</button>
+            <form id="deleteModalForm" method="POST" style="display:inline;">
+                <button type="submit" class="sv-btn sv-btn-danger">🗑️ احذف نهائياً</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDelete(id, name) {
+    document.getElementById('deleteModalFileName').textContent = name;
+    document.getElementById('deleteModalForm').action = '/delete/' + id;
+    document.getElementById('deleteModal').classList.add('show');
+}
+function closeDelete() {
+    document.getElementById('deleteModal').classList.remove('show');
+}
+document.getElementById('deleteModal').addEventListener('click', function(e){ if(e.target===this) closeDelete(); });
+</script>
+</body>
+</html>

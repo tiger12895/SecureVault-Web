@@ -1,0 +1,112 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<div style="max-width:520px; margin:0 auto;">
+
+    <div class="flex-center gap-2 mb-4">
+        <a href="/dashboard" class="sv-btn sv-btn-outline sv-btn-sm">← رجوع</a>
+        <div>
+            <div style="font-size:1.2rem; font-weight:700;">إعداد المصادقة الثنائية</div>
+            <div class="text-muted text-sm">Two-Factor Authentication (2FA) — TOTP</div>
+        </div>
+    </div>
+
+    {% if already_enabled %}
+    <!-- Already enabled state -->
+    <div class="sv-card mb-3">
+        <div style="padding:2rem; text-align:center;">
+            <div style="font-size:3rem; margin-bottom:1rem;">✅</div>
+            <div style="font-size:1.1rem; font-weight:700; color:var(--sv-green); margin-bottom:0.5rem;">المصادقة الثنائية مفعّلة</div>
+            <div class="text-muted text-sm mb-4">حسابك محمي بطبقة أمان إضافية</div>
+            <form action="/disable-2fa" method="POST" onsubmit="return confirm('هل أنت متأكد من إلغاء تفعيل 2FA؟ سيقل مستوى أمان حسابك.')">
+                <button type="submit" class="sv-btn sv-btn-danger">⚠️ إلغاء تفعيل 2FA</button>
+            </form>
+        </div>
+    </div>
+    {% else %}
+    <!-- Setup steps -->
+    <div class="sv-card mb-3">
+        <div class="sv-card-header">🔑 خطوات الإعداد</div>
+        <div style="padding:1.4rem;">
+
+            <!-- Step 1 -->
+            <div style="display:flex; gap:12px; margin-bottom:1.5rem; align-items:flex-start;">
+                <div style="width:28px; height:28px; background:var(--sv-accent); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:700; flex-shrink:0;">1</div>
+                <div>
+                    <div style="font-weight:700; margin-bottom:4px;">حمّل تطبيق TOTP</div>
+                    <div class="text-muted text-sm">استخدم <strong style="color:var(--sv-text);">Google Authenticator</strong> أو <strong style="color:var(--sv-text);">Authy</strong> على هاتفك</div>
+                </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div style="display:flex; gap:12px; margin-bottom:1.5rem; align-items:flex-start;">
+                <div style="width:28px; height:28px; background:var(--sv-accent); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:700; flex-shrink:0;">2</div>
+                <div style="width:100%;">
+                    <div style="font-weight:700; margin-bottom:0.8rem;">امسح الـ QR Code</div>
+                    <!-- QR Code display -->
+                    <div style="text-align:center; background:var(--sv-surface); border:1px solid var(--sv-border); border-radius:10px; padding:1.2rem; margin-bottom:0.8rem;">
+                        <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code" style="width:180px; height:180px; border-radius:6px; display:block; margin:0 auto;">
+                        <div class="text-muted text-sm" style="margin-top:0.6rem;">امسح بكاميرا التطبيق</div>
+                    </div>
+                    <!-- Manual key -->
+                    <div class="text-muted text-sm mb-1" style="font-weight:700;">أو أدخل المفتاح يدوياً:</div>
+                    <div style="display:flex; gap:6px; align-items:center;">
+                        <div id="secretKey" class="mono" style="flex:1; background:var(--sv-surface); border:1px solid var(--sv-border); border-radius:7px; padding:0.6rem 0.8rem; letter-spacing:2px;">{{ secret }}</div>
+                        <button type="button" class="sv-btn sv-btn-outline sv-btn-sm" onclick="copySecret()">📋</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div style="display:flex; gap:12px; align-items:flex-start;">
+                <div style="width:28px; height:28px; background:var(--sv-green); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:700; flex-shrink:0;">3</div>
+                <div style="width:100%;">
+                    <div style="font-weight:700; margin-bottom:0.8rem;">أدخل الكود للتأكيد</div>
+                    <form action="/confirm-2fa" method="POST">
+                        <div style="display:flex; gap:8px;">
+                            <input type="text" name="code" id="codeInput"
+                                   class="sv-inp"
+                                   placeholder="_ _ _ _ _ _"
+                                   maxlength="6" pattern="[0-9]{6}" required
+                                   autocomplete="one-time-code"
+                                   style="text-align:center; font-family:'IBM Plex Mono',monospace; font-size:1.4rem; letter-spacing:0.4em; flex:1;">
+                            <button type="submit" class="sv-btn sv-btn-primary" style="padding:0 1.2rem;">تفعيل</button>
+                        </div>
+                        <div class="form-hint">الكود مكوّن من 6 أرقام ويتجدد كل 30 ثانية</div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Security Note -->
+    <div style="background:rgba(255,184,48,0.07); border:1px solid rgba(255,184,48,0.22); border-radius:9px; padding:0.9rem 1.1rem; display:flex; gap:10px; align-items:flex-start;">
+        <span>⚠️</span>
+        <div class="text-sm" style="color:var(--sv-warn); line-height:1.7;">
+            احتفظ بالمفتاح السري في مكان آمن — إذا فقدت هاتفك ستحتاجه لاستعادة الوصول.
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<script>
+function copySecret() {
+    const text = document.getElementById('secretKey').textContent.trim();
+    navigator.clipboard.writeText(text).then(() => {
+        alert('✅ تم نسخ المفتاح السري');
+    });
+}
+
+const codeInput = document.getElementById('codeInput');
+if (codeInput) {
+    codeInput.addEventListener('input', function() {
+        this.value = this.value.replace(/\D/g, '').slice(0, 6);
+        if (this.value.length === 6) {
+            this.closest('form').submit();
+        }
+    });
+}
+</script>
+{% endblock %}

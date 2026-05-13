@@ -1,0 +1,35 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="auth-wrap">
+    <div class="auth-card">
+        <div class="auth-logo">
+            <div class="auth-logo-icon">🛡️</div>
+            <div class="auth-title">إنشاء حساب جديد</div>
+            <div class="auth-sub">انضم إلى SecureVault — تخزين آمن ومشفر</div>
+        </div>
+
+        <form method="POST" action="/register">
+            <div class="sv-fg">
+                <label class="sv-lbl">اسم المستخدم</label>
+                <input type="text" name="username" class="sv-inp" placeholder="username" required>
+            </div>
+            <div class="sv-fg">
+                <label class="sv-lbl">البريد الإلكتروني</label>
+                <input type="email" name="email" class="sv-inp" placeholder="name@example.com" required>
+            </div>
+            <div class="sv-fg">
+                <label class="sv-lbl">كلمة المرور</label>
+                <input type="password" name="password" class="sv-inp" placeholder="••••••••" required>
+                <div class="form-hint">استخدم 8 أحرف على الأقل مع أرقام ورموز</div>
+            </div>
+            <button type="submit" class="sv-btn sv-btn-primary sv-btn-lg sv-btn-full">
+                ✅ إنشاء الحساب
+            </button>
+        </form>
+
+        <p class="text-center text-sm mt-3" style="color:var(--sv-muted);">
+            لديك حساب؟ <a href="/login" class="auth-link">سجل دخولك</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

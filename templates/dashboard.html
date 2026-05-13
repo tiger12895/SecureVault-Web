@@ -1,0 +1,159 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<!-- Page Header -->
+<div class="flex-between mb-4">
+    <div>
+        <div class="flex-center gap-2 mb-1">
+            <span style="font-size:1.35rem; font-weight:700;">لوحة التحكم</span>
+        </div>
+        <p class="text-muted text-sm">أهلاً يا <strong style="color:var(--sv-accent);">{{ session['user_name'] }}</strong> — نظام التخزين السحابي الآمن</p>
+    </div>
+    <div class="flex gap-2">
+        <a href="/setup-2fa" class="sv-btn sv-btn-outline sv-btn-sm">🛡️ إعداد 2FA</a>
+        <a href="/upload" class="sv-btn sv-btn-primary">+ رفع مستند</a>
+    </div>
+</div>
+
+<!-- Stats -->
+<div class="stat-grid">
+    <div class="stat-card stat-blue">
+        <div class="stat-lbl">إجمالي الملفات</div>
+        <div class="stat-val">{{ total_docs }}</div>
+        <div class="stat-sub">مستند مشفر</div>
+    </div>
+    <div class="stat-card stat-green">
+        <div class="stat-lbl">خوارزمية التشفير</div>
+        <div class="stat-val">AES-256</div>
+        <div class="stat-sub">CFB Mode</div>
+    </div>
+    <div class="stat-card stat-teal">
+        <div class="stat-lbl">بصمة النزاهة</div>
+        <div class="stat-val">SHA-256</div>
+        <div class="stat-sub">Integrity Hash</div>
+    </div>
+    <div class="stat-card stat-warn">
+        <div class="stat-lbl">مصادقة الجلسة</div>
+        <div class="stat-val">JWT</div>
+        <div class="stat-sub">HS256 · 2h</div>
+    </div>
+</div>
+
+<!-- Documents Table -->
+<div class="sv-card">
+    <div class="sv-card-header flex-between">
+        <span>📁 المستندات المشفرة</span>
+        <span class="badge-enc">{{ total_docs }} ملف</span>
+    </div>
+
+    <table class="sv-table">
+        <thead>
+            <tr>
+                <th>اسم الملف</th>
+                {% if session['role_id'] == 1 %}<th>المالك</th>{% endif %}
+                <th>تاريخ الرفع</th>
+                <th>الحالة</th>
+                <th style="text-align:center;">إجراءات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for doc in docs %}
+            <tr>
+                <td>
+                    <span class="file-icon">📄</span>
+                    <span class="file-name">{{ doc.file_name }}</span>
+                </td>
+                {% if session['role_id'] == 1 %}
+                <td><span class="text-muted text-sm">👤 {{ doc.username }}</span></td>
+                {% endif %}
+                <td class="text-muted text-sm">{{ doc.upload_date[:16] if doc.upload_date else '—' }}</td>
+                <td><span class="badge-enc">🔒 AES-256</span></td>
+                <td style="text-align:center;">
+                    <div class="flex-center gap-2" style="justify-content:center;">
+                        <a href="/download/{{ doc.doc_id }}" class="sv-btn sv-btn-success sv-btn-sm" title="تحميل">⬇ تحميل</a>
+                        <a href="/metadata/{{ doc.doc_id }}" class="sv-btn sv-btn-info sv-btn-sm" title="تفاصيل">🔎 تفاصيل</a>
+                        <button onclick="confirmDelete({{ doc.doc_id }}, '{{ doc.file_name }}')" class="sv-btn sv-btn-danger sv-btn-sm">🗑</button>
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" class="text-center" style="padding:3rem; color:var(--sv-muted);">
+                    <div style="font-size:2.5rem; margin-bottom:0.8rem; opacity:0.3;">📭</div>
+                    لا توجد ملفات مرفوعة حالياً
+                    <div class="mt-3">
+                        <a href="/upload" class="sv-btn sv-btn-primary">+ ارفع أول مستند</a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- JWT Debug Section -->
+<div class="mt-4">
+    <button class="sv-btn sv-btn-outline sv-btn-sm" onclick="toggleJWT()" id="jwtToggleBtn"
+            style="width:100%; justify-content:space-between; border-radius:8px; padding:0.7rem 1rem;">
+        <span>🔑 عرض JWT Token الخاص بجلستك (للتوثيق والعرض)</span>
+        <span id="jwtArrow">▼</span>
+    </button>
+    <div id="jwtBox" style="display:none;" class="sv-card mt-2">
+        <div class="sv-card-header">
+            <span style="color:var(--sv-warn);">⚠️</span>
+            هذا القسم لأغراض العرض والتوثيق فقط — في الإنتاج لا يُعرض الـ Token
+        </div>
+        <div style="padding:1.2rem;">
+            <div id="jwtDisplay" style="background:var(--sv-surface); border:1px solid var(--sv-border); border-radius:8px; padding:1rem; font-family:'IBM Plex Mono',monospace; font-size:0.75rem; line-height:1.8; word-break:break-all; color:var(--sv-muted);">
+                انقر زر التحميل لعرض التوكن...
+            </div>
+            <div class="flex gap-2 mt-3">
+                <button class="sv-btn sv-btn-warn sv-btn-sm" onclick="loadJWT()" style="border-color:var(--sv-warn); color:var(--sv-warn);">⟳ تحميل التوكن</button>
+                <a href="https://jwt.io" target="_blank" class="sv-btn sv-btn-outline sv-btn-sm">🔗 تحقق على jwt.io</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleJWT() {
+    const box = document.getElementById('jwtBox');
+    const arrow = document.getElementById('jwtArrow');
+    if (box.style.display === 'none') {
+        box.style.display = 'block'; arrow.textContent = '▲';
+    } else {
+        box.style.display = 'none'; arrow.textContent = '▼';
+    }
+}
+
+function loadJWT() {
+    const token = '{{ session.get("jwt_token", "") }}';
+    if (!token) {
+        document.getElementById('jwtDisplay').innerHTML = '<span style="color:var(--sv-danger)">لا يوجد توكن في الجلسة</span>';
+        return;
+    }
+    const parts = token.split('.');
+    if (parts.length === 3) {
+        try {
+            const payload = JSON.parse(atob(parts[1]));
+            const expDate = payload.exp ? new Date(payload.exp * 1000).toLocaleString('ar') : 'غير محدد';
+            document.getElementById('jwtDisplay').innerHTML =
+                `<div style="margin-bottom:0.8rem; color:var(--sv-muted); font-size:0.7rem;">// TOKEN STRUCTURE</div>` +
+                `<span style="color:#ff4f6d;">${parts[0]}</span>` +
+                `<span style="color:var(--sv-muted)">.</span>` +
+                `<span style="color:var(--sv-warn)">${parts[1]}</span>` +
+                `<span style="color:var(--sv-muted)">.</span>` +
+                `<span style="color:var(--sv-green)">${parts[2]}</span>` +
+                `<hr style="border-color:var(--sv-border); margin:0.8rem 0;">` +
+                `<div style="color:var(--sv-accent2); margin-bottom:0.4rem;">// DECODED PAYLOAD</div>` +
+                `<div style="color:var(--sv-text)">user_id: <span style="color:var(--sv-accent)">${payload.user_id || '?'}</span></div>` +
+                `<div style="color:var(--sv-text)">username: <span style="color:var(--sv-accent)">"${payload.username || '?'}"</span></div>` +
+                `<div style="color:var(--sv-text)">role_id: <span style="color:var(--sv-accent)">${payload.role_id || '?'}</span></div>` +
+                `<div style="color:var(--sv-text)">expires: <span style="color:var(--sv-warn)">${expDate}</span></div>`;
+        } catch(e) {
+            document.getElementById('jwtDisplay').innerHTML = `<span style="color:var(--sv-danger)">خطأ في قراءة التوكن</span>`;
+        }
+    }
+}
+</script>
+{% endblock %}

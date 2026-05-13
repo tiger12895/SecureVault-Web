@@ -1,0 +1,81 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<div class="auth-wrap">
+    <div class="auth-card">
+        <div class="auth-logo">
+            <div class="auth-logo-icon" style="font-size:1.8rem;">🔐</div>
+            <div class="auth-title">التحقق بخطوتين</div>
+            <div class="auth-sub">Two-Factor Authentication</div>
+        </div>
+
+        <!-- TOTP Visual Indicator -->
+        <div style="text-align:center; margin-bottom:1.5rem;">
+            <div style="display:inline-flex; align-items:center; gap:8px; background:rgba(99,116,255,0.08); border:1px solid rgba(99,116,255,0.22); border-radius:20px; padding:0.4rem 1rem;">
+                <span style="color:var(--sv-accent); font-size:0.82rem; font-weight:700;">📱 Google Authenticator / Authy</span>
+            </div>
+        </div>
+
+        <form action="/verify-2fa" method="POST">
+            <div class="sv-fg">
+                <label class="sv-lbl" style="text-align:center; display:block; margin-bottom:0.8rem;">
+                    أدخل الكود المكوّن من 6 أرقام
+                </label>
+                <input type="text" name="code" id="codeInput"
+                       class="sv-inp"
+                       placeholder="000000"
+                       maxlength="6" pattern="[0-9]{6}" required
+                       autocomplete="one-time-code" autofocus
+                       style="text-align:center; font-family:'IBM Plex Mono',monospace; font-size:2rem; letter-spacing:0.5em; padding:0.8rem;">
+            </div>
+
+            <!-- Timer bar (visual only) -->
+            <div style="margin-bottom:1.2rem;">
+                <div style="display:flex; justify-content:space-between; font-size:0.72rem; color:var(--sv-muted); margin-bottom:4px;">
+                    <span>⏱️ صالح لمدة 30 ثانية</span>
+                    <span id="timerText">جاري الحساب...</span>
+                </div>
+                <div style="background:var(--sv-surface); border:1px solid var(--sv-border); border-radius:4px; height:4px; overflow:hidden;">
+                    <div id="timerBar" style="height:100%; background:var(--sv-accent); transition:width 1s linear; width:100%;"></div>
+                </div>
+            </div>
+
+            <button type="submit" class="sv-btn sv-btn-primary sv-btn-lg sv-btn-full" id="submitBtn">
+                🔓 تحقق وادخل
+            </button>
+        </form>
+
+        <div style="margin-top:1.2rem; padding-top:1.2rem; border-top:1px solid var(--sv-border); text-align:center;">
+            <a href="/login" class="text-muted text-sm" style="color:var(--sv-muted);">← العودة لتسجيل الدخول</a>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-digits only + auto-submit
+const codeInput = document.getElementById('codeInput');
+codeInput.addEventListener('input', function() {
+    this.value = this.value.replace(/\D/g, '').slice(0, 6);
+    if (this.value.length === 6) {
+        document.getElementById('submitBtn').textContent = '⏳ جاري التحقق...';
+        this.closest('form').submit();
+    }
+});
+
+// TOTP 30-second timer
+function updateTimer() {
+    const now = Math.floor(Date.now() / 1000);
+    const remaining = 30 - (now % 30);
+    const pct = (remaining / 30) * 100;
+
+    document.getElementById('timerText').textContent = remaining + 's';
+    document.getElementById('timerBar').style.width = pct + '%';
+    document.getElementById('timerBar').style.background =
+        remaining <= 5 ? 'var(--sv-danger)' :
+        remaining <= 10 ? 'var(--sv-warn)' :
+        'var(--sv-accent)';
+}
+updateTimer();
+setInterval(updateTimer, 1000);
+</script>
+{% endblock %}
