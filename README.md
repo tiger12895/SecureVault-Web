@@ -399,6 +399,6 @@ This project is licensed under the MIT License.
 
 **🔒 SecureVault** — Built with security in mind
 
-*Abdelrhman Ahmed Mohamed*
+*Abdelrhman Ahmed Mohamed 👨🏼‍💻👨🫰🏼🐯*
 
 </div>
