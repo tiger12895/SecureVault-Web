@@ -8,7 +8,7 @@
             <div class="auth-sub">انضم إلى SecureVault — تخزين آمن ومشفر</div>
         </div>
 
-        <form method="POST" action="/register">
+        <form method="POST" action="/register" id="registerForm">
             <div class="sv-fg">
                 <label class="sv-lbl">اسم المستخدم</label>
                 <input type="text" name="username" class="sv-inp" placeholder="username" required>
@@ -19,10 +19,41 @@
             </div>
             <div class="sv-fg">
                 <label class="sv-lbl">كلمة المرور</label>
-                <input type="password" name="password" class="sv-inp" placeholder="••••••••" required>
-                <div class="form-hint">استخدم 8 أحرف على الأقل مع أرقام ورموز</div>
+                <div style="position:relative;">
+                    <input type="password" name="password" id="passwordInput" class="sv-inp"
+                           placeholder="••••••••" required autocomplete="new-password"
+                           style="padding-left:2.5rem;"
+                           oninput="checkPolicy(this.value)">
+                    <button type="button" onclick="togglePass()"
+                            style="position:absolute; left:0.7rem; top:50%; transform:translateY(-50%);
+                                   background:none; border:none; cursor:pointer; font-size:1rem; color:var(--sv-muted);"
+                            id="eyeBtn">👁️</button>
+                </div>
+
+                <!-- Password Strength Bar -->
+                <div style="margin-top:8px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                        <span class="form-hint">قوة كلمة المرور:</span>
+                        <span id="strengthLabel" style="font-size:0.75rem; font-weight:700;"></span>
+                    </div>
+                    <div style="background:var(--sv-surface); border:1px solid var(--sv-border); border-radius:4px; height:5px; overflow:hidden;">
+                        <div id="strengthBar" style="height:100%; width:0%; transition:all 0.3s; border-radius:4px;"></div>
+                    </div>
+                </div>
+
+                <!-- Policy Checklist -->
+                <div style="margin-top:10px; background:var(--sv-surface); border:1px solid var(--sv-border); border-radius:8px; padding:0.8rem 1rem;">
+                    <div class="form-hint" style="margin-bottom:6px; font-weight:700;">متطلبات كلمة المرور:</div>
+                    <div id="rule-length"  class="policy-rule">✗ &nbsp;8 أحرف على الأقل</div>
+                    <div id="rule-upper"   class="policy-rule">✗ &nbsp;حرف كبير (A-Z)</div>
+                    <div id="rule-lower"   class="policy-rule">✗ &nbsp;حرف صغير (a-z)</div>
+                    <div id="rule-number"  class="policy-rule">✗ &nbsp;رقم (0-9)</div>
+                    <div id="rule-special" class="policy-rule">✗ &nbsp;رمز خاص (!@#$%...)</div>
+                </div>
             </div>
-            <button type="submit" class="sv-btn sv-btn-primary sv-btn-lg sv-btn-full">
+
+            <button type="submit" class="sv-btn sv-btn-primary sv-btn-lg sv-btn-full" id="submitBtn" disabled
+                    style="opacity:0.5; cursor:not-allowed;">
                 ✅ إنشاء الحساب
             </button>
         </form>
@@ -32,4 +63,104 @@
         </p>
     </div>
 </div>
+
+<style>
+.policy-rule {
+    font-size: 0.78rem;
+    color: var(--sv-muted);
+    padding: 2px 0;
+    transition: color 0.2s;
+    font-family: 'IBM Plex Mono', monospace;
+}
+.policy-rule.pass {
+    color: var(--sv-green);
+}
+</style>
+
+<script>
+function checkPolicy(val) {
+    const rules = {
+        'rule-length':  val.length >= 8,
+        'rule-upper':   /[A-Z]/.test(val),
+        'rule-lower':   /[a-z]/.test(val),
+        'rule-number':  /[0-9]/.test(val),
+        'rule-special': /[!@#$%^&*(),.?\":{}|<>]/.test(val)
+    };
+
+    const labels = {
+        'rule-length':  '✓ &nbsp;8 أحرف على الأقل',
+        'rule-upper':   '✓ &nbsp;حرف كبير (A-Z)',
+        'rule-lower':   '✓ &nbsp;حرف صغير (a-z)',
+        'rule-number':  '✓ &nbsp;رقم (0-9)',
+        'rule-special': '✓ &nbsp;رمز خاص (!@#$%...)'
+    };
+    const labelsX = {
+        'rule-length':  '✗ &nbsp;8 أحرف على الأقل',
+        'rule-upper':   '✗ &nbsp;حرف كبير (A-Z)',
+        'rule-lower':   '✗ &nbsp;حرف صغير (a-z)',
+        'rule-number':  '✗ &nbsp;رقم (0-9)',
+        'rule-special': '✗ &nbsp;رمز خاص (!@#$%...)'
+    };
+
+    let passed = 0;
+    for (const [id, ok] of Object.entries(rules)) {
+        const el = document.getElementById(id);
+        el.classList.toggle('pass', ok);
+        el.innerHTML = ok ? labels[id] : labelsX[id];
+        if (ok) passed++;
+    }
+
+    // Strength bar
+    const bar = document.getElementById('strengthBar');
+    const lbl = document.getElementById('strengthLabel');
+    const pct = (passed / 5) * 100;
+    bar.style.width = pct + '%';
+
+    if (passed <= 1) {
+        bar.style.background = 'var(--sv-danger)';
+        lbl.style.color = 'var(--sv-danger)';
+        lbl.textContent = 'ضعيفة جداً';
+    } else if (passed === 2) {
+        bar.style.background = 'var(--sv-danger)';
+        lbl.style.color = 'var(--sv-danger)';
+        lbl.textContent = 'ضعيفة';
+    } else if (passed === 3) {
+        bar.style.background = 'var(--sv-warn)';
+        lbl.style.color = 'var(--sv-warn)';
+        lbl.textContent = 'متوسطة';
+    } else if (passed === 4) {
+        bar.style.background = '#88c057';
+        lbl.style.color = '#88c057';
+        lbl.textContent = 'جيدة';
+    } else {
+        bar.style.background = 'var(--sv-green)';
+        lbl.style.color = 'var(--sv-green)';
+        lbl.textContent = 'قوية ✓';
+    }
+
+    // Enable submit only if all pass
+    const btn = document.getElementById('submitBtn');
+    if (passed === 5) {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+    } else {
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+        btn.style.cursor = 'not-allowed';
+    }
+}
+
+function togglePass() {
+    const inp = document.getElementById('passwordInput');
+    const btn = document.getElementById('eyeBtn');
+    if (inp.type === 'password') {
+        inp.type = 'text';
+        btn.textContent = '🙈';
+    } else {
+        inp.type = 'password';
+        btn.textContent = '👁️';
+    }
+}
+</script>
 {% endblock %}

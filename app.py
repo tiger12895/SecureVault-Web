@@ -103,10 +103,32 @@ def index():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
+        username = request.form['username']
+        email    = request.form['email']
+        password = request.form['password']
+
+        # ======================================================
+        # Password Policy Enforcement
+        # ======================================================
+        import re
+        errors = []
+        if len(password) < 8:
+            errors.append("كلمة المرور يجب أن تكون 8 أحرف على الأقل")
+        if not re.search(r'[A-Z]', password):
+            errors.append("يجب أن تحتوي على حرف كبير واحد على الأقل (A-Z)")
+        if not re.search(r'[a-z]', password):
+            errors.append("يجب أن تحتوي على حرف صغير واحد على الأقل (a-z)")
+        if not re.search(r'[0-9]', password):
+            errors.append("يجب أن تحتوي على رقم واحد على الأقل (0-9)")
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+            errors.append("يجب أن تحتوي على رمز خاص مثل !@#$%")
+
+        if errors:
+            for err in errors:
+                flash("⚠️ " + err)
+            return render_template('register.html', password_errors=errors)
+
         try:
-            username = request.form['username']
-            email = request.form['email']
-            password = request.form['password']
             hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
             db = get_db()
             db.execute('INSERT INTO users (username, email, password_hash, role_id) VALUES (?,?,?,3)',
@@ -444,6 +466,41 @@ def change_role():
         db.commit()
         db.close()
         flash("تم تحديث صلاحية المستخدم بنجاح")
+    return redirect(url_for('admin_panel'))
+
+
+@app.route('/admin/delete-user/<int:user_id>', methods=['POST'])
+@login_required
+@admin_only
+def delete_user(user_id):
+    """Admin: حذف مستخدم — لا يمكن حذف نفسك"""
+    if user_id == session['user_id']:
+        flash("❌ لا يمكنك حذف حسابك الخاص")
+        return redirect(url_for('admin_panel'))
+
+    db = get_db()
+    user = db.execute('SELECT * FROM users WHERE user_id = ?', (user_id,)).fetchone()
+    if not user:
+        db.close()
+        abort(404)
+
+    # حذف مستندات المستخدم من القرص
+    docs = db.execute('SELECT * FROM documents WHERE owner_id = ?', (user_id,)).fetchall()
+    for doc in docs:
+        try:
+            if os.path.exists(doc['encrypted_file_path']):
+                os.remove(doc['encrypted_file_path'])
+        except Exception:
+            pass
+
+    # حذف مستنداته من DB
+    db.execute('DELETE FROM documents WHERE owner_id = ?', (user_id,))
+    # حذف المستخدم
+    db.execute('DELETE FROM users WHERE user_id = ?', (user_id,))
+    db.commit()
+    db.close()
+
+    flash(f"🗑️ تم حذف المستخدم '{user['username']}' وجميع مستنداته")
     return redirect(url_for('admin_panel'))
 
 @app.route('/logout')

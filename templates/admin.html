@@ -43,6 +43,7 @@
                 <th>2FA</th>
                 <th>نوع الحساب</th>
                 <th style="text-align:center;">تغيير الدور</th>
+                <th style="text-align:center;">حذف</th>
             </tr>
         </thead>
         <tbody>
@@ -90,11 +91,53 @@
                     <span class="text-muted text-sm">—</span>
                     {% endif %}
                 </td>
+                <!-- حذف المستخدم -->
+                <td style="text-align:center;">
+                    {% if user.user_id != session['user_id'] %}
+                    <button onclick="confirmDeleteUser({{ user.user_id }}, '{{ user.username }}')"
+                            class="sv-btn sv-btn-danger sv-btn-sm">🗑</button>
+                    {% else %}
+                    <span class="text-muted text-sm" title="لا يمكنك حذف نفسك">—</span>
+                    {% endif %}
+                </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
+
+
+<!-- Delete User Modal -->
+<div class="sv-overlay" id="deleteUserModal">
+    <div class="sv-modal">
+        <div class="sv-modal-title">⚠️ تأكيد حذف المستخدم</div>
+        <p class="text-sm text-muted mb-2">سيتم حذف المستخدم:</p>
+        <p id="deleteUserName" class="mono mb-2" style="color:var(--sv-danger); font-size:0.95rem;"></p>
+        <p class="text-sm" style="color:var(--sv-warn); margin-bottom:1.5rem;">
+            ⚠️ سيتم حذف جميع ملفاته ومستنداته أيضاً — لا رجعة في هذا الإجراء.
+        </p>
+        <div class="flex gap-2" style="justify-content:flex-end;">
+            <button class="sv-btn sv-btn-outline" onclick="closeDeleteUser()">إلغاء</button>
+            <form id="deleteUserForm" method="POST" style="display:inline;">
+                <button type="submit" class="sv-btn sv-btn-danger">🗑️ حذف نهائياً</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDeleteUser(userId, username) {
+    document.getElementById('deleteUserName').textContent = username + '  (#' + userId + ')';
+    document.getElementById('deleteUserForm').action = '/admin/delete-user/' + userId;
+    document.getElementById('deleteUserModal').classList.add('show');
+}
+function closeDeleteUser() {
+    document.getElementById('deleteUserModal').classList.remove('show');
+}
+document.getElementById('deleteUserModal').addEventListener('click', function(e) {
+    if (e.target === this) closeDeleteUser();
+});
+</script>
 
 <!-- RBAC Explanation -->
 <div class="sv-card">
