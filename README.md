@@ -399,6 +399,6 @@ This project is licensed under the MIT License.
 
 **🔒 SecureVault** — Built with security in mind
 
-*Final Year Project — 2026*
+*Abdelrhman Ahmed Mohamed*
 
 </div>
